@@ -5,7 +5,6 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.io.Serializable;
-import java.nio.file.Files;
 import java.util.Date; // TODO: You'll likely use this in this class
 import java.util.HashMap;
 import java.util.Map;
@@ -72,7 +71,7 @@ public class Commit implements Serializable{
     }
 
 
-    public static Commit getCommitBySha1() {
+    public static Commit getCurrentCommit() {
         String sha1 = Head.getHeadSha1();
         File commit = new File (Repository.COMMITS_DIR, sha1);
         Commit co = Utils.readObject(commit, Commit.class);

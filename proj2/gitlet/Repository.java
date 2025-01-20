@@ -104,9 +104,9 @@ public class Repository {
 
     /** TODO : rm  : look at document */
 
-    public static void rm (String fileName) {
-//       String fullPath = CWD.getAbsolutePath() + File.separator + fileName;
-//       Index.stageForRemoval(fullPath);
+    public static void rm (String fileName) throws IOException {
+       String fullPath = CWD.getAbsolutePath() + File.separator + fileName;
+       Index.stageForRemoval(fullPath);
 
     }
 

@@ -3,10 +3,10 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Paths;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+
+import static gitlet.Main.errorMessage;
 
 public  final class Index {
 
@@ -15,7 +15,7 @@ public  final class Index {
            removeFromStageForRemoval(hashedPath);
            removeFromStageForAddition(hashedPath);
            /** when I add if it's not tracked in current commit */
-           Commit currCommit = Commit.getCommitBySha1();
+           Commit currCommit = Commit.getCurrentCommit();
            Map<String,String>trackedFilesForCurrentCommit = currCommit.getTrackedFiles();
            File currFile = new File(fullPath);
            /** we add if it's not tracked and if it's not the same sha1 */
@@ -29,9 +29,30 @@ public  final class Index {
 
      public static void stageForRemoval(String fullPath) throws IOException {
            String hashedPath = Utils.hashPath(fullPath);
-//           removeFrom
+           boolean inAdd = removeFromStageForAddition(hashedPath);
+           Commit commit = Commit.getCurrentCommit();
+           Map<String,String>trackedFilesForCurrentCommit = commit.getTrackedFiles();
+           if (!inAdd && !trackedFilesForCurrentCommit.containsKey(fullPath)) {
+               errorMessage("No reason to remove the file.");
+               System.exit(0);
+           }
+           File currFile = new File(fullPath);
+
+           /** we don't remove the file unless it was tracked in the current commit */
+           if (currFile.exists() && trackedFilesForCurrentCommit.containsKey(fullPath)) {
+               currFile.delete();
+           }
+         addToRemove(hashedPath, fullPath);
+
      }
 
+     public  static void addToRemove(String hashedPath, String fullPath) throws IOException {
+           File folder = new File (Repository.STAGED_RM, hashedPath);
+           folder.mkdir();
+           File pathh = new File(folder, "path");
+           pathh.createNewFile();
+           Utils.writeContents(pathh, fullPath);
+     }
 
 
       public static void addThisFile(String hashedPath, File currFile, String fullPath) throws IOException {
@@ -49,10 +70,10 @@ public  final class Index {
 
 
 
-       public static void removeFromStageForRemoval(String hasedPath){
+       public static boolean removeFromStageForRemoval(String hasedPath){
            File file = new File(Repository.STAGED_RM, hasedPath);
            if (!file.exists()){
-               return;
+               return false;
            }
            List<String> files = Utils.plainFilenamesIn(file);
            for (String filename : files){
@@ -60,14 +81,15 @@ public  final class Index {
                toDelete.delete();
            }
            file.delete();
+           return true;
        }
 
 
 
-    public static void removeFromStageForAddition(String hasedPath){
+    public static boolean removeFromStageForAddition(String hasedPath){
         File file = new File(Repository.STAGED_ADD, hasedPath);
         if (!file.exists()){
-            return;
+            return false;
         }
         List<String> files = Utils.plainFilenamesIn(file);
         for (String filename : files){
@@ -75,7 +97,10 @@ public  final class Index {
                 toDelete.delete();
         }
         file.delete();
+        return true;
     }
+
+
 
 
 

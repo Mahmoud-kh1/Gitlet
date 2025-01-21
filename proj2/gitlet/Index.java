@@ -100,6 +100,42 @@ public  final class Index {
         return true;
     }
 
+    public  static List<String> getRemovedPaths(){
+           List<String> rFiles = Utils.plainFilenamesIn(Repository.STAGED_RM);
+           for (String filename : rFiles){
+               File file = new File(filename, "path");
+               String p = Utils.readContentsAsString(file);
+               rFiles.add(p);
+           }
+           return rFiles;
+    }
+
+    public static void updateAddedFiles(Map<String, String> trackedFiles) throws IOException {
+           List<String> folders = Utils.plainFilenamesIn(Repository.STAGED_ADD);
+           if (!folders.isEmpty()) {
+               for (String sha1Path : folders) {
+                   File sha1ForPath = new File(Repository.STAGED_ADD, sha1Path);
+                   List<String> addedFiles = Utils.plainFilenamesIn(sha1ForPath);
+                   String p = "";
+                   File fileToAdd = null;
+                   for (String nameOfFileInPathSha1 : addedFiles) {
+
+                       if (nameOfFileInPathSha1.equals("path")) {
+                           File file = new File(sha1ForPath, nameOfFileInPathSha1);
+                           p = Utils.readContentsAsString(file);
+                       } else {
+                           fileToAdd = new File(sha1ForPath, nameOfFileInPathSha1);
+                       }
+                   }
+                   String newFileSha1 = Utils.getShaForFile(fileToAdd);
+                   System.out.println(fileToAdd.getName());
+                   trackedFiles.put(p, newFileSha1);
+                   Blobs.create(fileToAdd, newFileSha1);
+
+               }
+           }
+    }
+
 
 
 

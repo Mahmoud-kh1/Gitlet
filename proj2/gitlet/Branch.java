@@ -24,4 +24,11 @@ public class Branch {
     public static void setCurrentBranchName(String branchName){
         Utils.writeContents(Repository.CUR_BRANCH, branchName);
     }
+
+
+    public  static void setLastCommitInCurrentBranch(String sha1){
+       String name = Branch.getCurBranchName();
+       File branchFile = new File(Repository.BRANCHES_DIR, name);
+       Utils.writeContents(branchFile, sha1);
+    }
 }

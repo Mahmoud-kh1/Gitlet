@@ -34,7 +34,6 @@ public class Commit implements Serializable{
     private  String parentsha;
     private  Date timestamp;
     private Map<String, String>trackedFiles;
-    private Map<String, String>deletedFiles;
 
 
     /** constructor to make the intial commit */
@@ -43,8 +42,14 @@ public class Commit implements Serializable{
         this.parentsha = "";
         this.timestamp = new Date(0);
         this.trackedFiles = new HashMap<>();
-        this.deletedFiles = new HashMap<>();
          saveCommit();
+    }
+    public Commit (String message, Map<String, String> trackedFiles) throws IOException {
+        this.message = message;
+        this.parentsha = Head.getHeadSha1();
+        this.timestamp = new Date();
+        this.trackedFiles = trackedFiles;
+        this.saveCommit();
     }
 
 

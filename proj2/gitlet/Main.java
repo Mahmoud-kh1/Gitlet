@@ -31,6 +31,7 @@ public class Main {
                 break;
             // TODO: FILL THE REST IN
             case "commit":
+                Repository.commit(args[1]);
                 // TODO : fill commit command
                 break;
             case "rm":

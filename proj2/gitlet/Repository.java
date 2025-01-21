@@ -2,7 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.Date;
+import java.util.*;
 
 import static gitlet.Main.errorMessage;
 import static gitlet.Utils.*;
@@ -97,8 +97,26 @@ public class Repository {
 
     /** TODO : commit function to commit  files in index area*/
 
-    public static void commit (){
+    public static void commit (String message) throws IOException {
+        /** get the Head sha1*/
+        String currentCommitSha1 = Head.getHeadSha1();
+        Commit currentCommit;
 
+        /** get the current commit and map of it **/
+        File commit = new File(Repository.COMMITS_DIR, currentCommitSha1);
+        currentCommit = Utils.readObject(commit, Commit.class);
+        Map<String,String> trackedFilesForNewCommit = currentCommit.getTrackedFiles();
+        /** now we should remove from it the files with path in Stage for removal*/
+        removeThePathsInRemoval(trackedFilesForNewCommit);
+        /** now we should add blobls that in stage for addition and map them in the trakced Fils */
+        handleTheAddedFils(trackedFilesForNewCommit);
+        Commit newCommit = new Commit(message, trackedFilesForNewCommit);
+        String newCommitSha1 = newCommit.getSha1();
+        /** now we set the head to sha1 of this commit */
+        setHead(newCommitSha1);
+
+        /** and set the current Branch sha1 to this also */
+        Branch.setLastCommitInCurrentBranch(newCommitSha1);
     }
 
 
@@ -107,7 +125,6 @@ public class Repository {
     public static void rm (String fileName) throws IOException {
        String fullPath = CWD.getAbsolutePath() + File.separator + fileName;
        Index.stageForRemoval(fullPath);
-
     }
 
     /** TODO : log to get information about all commits*/
@@ -163,6 +180,8 @@ public class Repository {
 
     }
 
+    
+
    private static void createRepoFilesAndFolders() throws IOException {
        GITLET_DIR.mkdir();
        COMMITS_DIR.mkdir();
@@ -212,10 +231,23 @@ public class Repository {
        System.out.println(commit.getSha1());
        System.out.println(commit.getTimestamp());
        System.out.println(commit.getParentsha());
+       Map<String ,String> trackedFilesForNewCommit = commit.getTrackedFiles();
+       trackedFilesForNewCommit.forEach((key, value) -> {
+           System.out.println("Key: " + key + ", Value: " + value);
+       });
    }
 
 
-
+    public static Map<String, String> removeThePathsInRemoval(Map<String, String>trakedFiles){
+       List<String>deletedPaths = Index.getRemovedPaths();
+       for (String path : deletedPaths){
+           trakedFiles.remove(path);
+       }
+       return trakedFiles;
+    }
+    public static void handleTheAddedFils(Map<String ,String> trackedFiles) throws IOException {
+       Index.updateAddedFiles(trackedFiles);
+    }
 
 
 

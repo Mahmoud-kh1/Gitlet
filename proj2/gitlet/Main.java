@@ -14,6 +14,11 @@ public class Main {
         System.out.println(message);
         System.exit(0);
     }
+    public static void validateNumArgs(String[] args, int n) {
+        if (args.length != n) {
+            errorMessage("Incorrect operands.");
+        }
+    }
     public static void main(String[] args) throws IOException {
         if (args.length == 0) {
             errorMessage("Please enter a command.");
@@ -22,23 +27,33 @@ public class Main {
         String firstArg = args[0];
         switch(firstArg) {
             case "init":
+                validateNumArgs(args, 1);
                 Repository.init();
                 // TODO: handle the `init` command
                 break;
             case "add":
+                validateNumArgs(args, 2);
                 Repository.add(args[1]);
                 // TODO: handle the `add [filename]` command
                 break;
             // TODO: FILL THE REST IN
             case "commit":
+                if (args.length == 1){
+                    System.out.println("Please enter a commit message.");
+                    System.exit(0);
+                }
+                validateNumArgs(args, 2);
                 Repository.commit(args[1]);
                 // TODO : fill commit command
                 break;
             case "rm":
+                validateNumArgs(args, 2);
                 Repository.rm(args[1]);
                 // TODO : fill rm command
                 break;
             case "log" :
+                validateNumArgs(args, 1);
+                Repository.log();
                 //TODO : fill log command
                 break;
             case "global-log" :

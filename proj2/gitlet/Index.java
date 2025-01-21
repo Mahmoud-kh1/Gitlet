@@ -19,7 +19,7 @@ public  final class Index {
            Map<String,String>trackedFilesForCurrentCommit = currCommit.getTrackedFiles();
            File currFile = new File(fullPath);
            /** we add if it's not tracked and if it's not the same sha1 */
-           if(!trackedFilesForCurrentCommit.containsKey(fullPath) || trackedFilesForCurrentCommit.get(fullPath).equals(Utils.getShaForFile(currFile))){
+           if(!trackedFilesForCurrentCommit.containsKey(fullPath) || !trackedFilesForCurrentCommit.get(fullPath).equals(Utils.getShaForFile(currFile))){
                addThisFile(hashedPath, currFile, fullPath);
            }
 
@@ -128,14 +128,23 @@ public  final class Index {
                        }
                    }
                    String newFileSha1 = Utils.getShaForFile(fileToAdd);
-                   System.out.println(fileToAdd.getName());
                    trackedFiles.put(p, newFileSha1);
                    Blobs.create(fileToAdd, newFileSha1);
-
                }
            }
     }
 
+
+    public static void clearIndex(){
+           List<String> rm = Utils.plainFilenamesIn(Repository.STAGED_RM);
+           List<String> ad = Utils.plainFilenamesIn(Repository.STAGED_ADD);
+           for (String remove : rm){
+               removeFromStageForRemoval(remove);
+           }
+           for (String add : ad){
+               removeFromStageForAddition(add);
+           }
+    }
 
 
 

@@ -91,7 +91,9 @@ public class Commit implements Serializable{
     public Map<String, String> getTrackedFiles() {
         return trackedFiles;
     }
-
+    public String getMessage() {
+        return message;
+    }
 
 
 

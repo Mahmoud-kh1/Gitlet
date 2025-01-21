@@ -85,11 +85,11 @@ public class Repository {
     /** TODO : add function to stage files */
 
     public static void add (String fileName) throws IOException {
+        checkExistRepo();
         String fullPath = CWD.getAbsolutePath() + File.separator + fileName;
         File file = new File(fullPath);
         if (!file.exists()){
             errorMessage("File does not exist.");
-            System.exit(0);
         }
         Index.stageForAddition(fullPath);
 
@@ -98,6 +98,10 @@ public class Repository {
     /** TODO : commit function to commit  files in index area*/
 
     public static void commit (String message) throws IOException {
+
+        checkExistRepo();
+
+        checkChangesToCommit();
         /** get the Head sha1*/
         String currentCommitSha1 = Head.getHeadSha1();
         Commit currentCommit;
@@ -114,15 +118,17 @@ public class Repository {
         String newCommitSha1 = newCommit.getSha1();
         /** now we set the head to sha1 of this commit */
         setHead(newCommitSha1);
-
         /** and set the current Branch sha1 to this also */
         Branch.setLastCommitInCurrentBranch(newCommitSha1);
+        /** clear index */
+        Index.clearIndex();
     }
 
 
     /** TODO : rm  : look at document */
 
     public static void rm (String fileName) throws IOException {
+        checkExistRepo();
        String fullPath = CWD.getAbsolutePath() + File.separator + fileName;
        Index.stageForRemoval(fullPath);
     }
@@ -130,7 +136,22 @@ public class Repository {
     /** TODO : log to get information about all commits*/
 
     public static void log (){
+            checkExistRepo();
+            Commit commit = Commit.getCurrentCommit();
+            String sha1 = Head.getHeadSha1();
+            while(true){
+                System.out.println("===");
+                System.out.println("commit " + sha1);
+                System.out.println("Date: " + HelperMethods.formateDate(commit.getTimestamp()) + " -0800");
 
+                System.out.println(commit.getMessage());
+                System.out.println();
+                if (commit.getParentsha().equals("")){
+                    break;
+                }
+                File file = new File(Repository.COMMITS_DIR, commit.getParentsha());
+                commit = Utils.readObject(file, Commit.class);
+            }
     }
 
     /** TODO : global  also look at document*/
@@ -180,7 +201,7 @@ public class Repository {
 
     }
 
-    
+
 
    private static void createRepoFilesAndFolders() throws IOException {
        GITLET_DIR.mkdir();
@@ -199,6 +220,13 @@ public class Repository {
             return true;
         }
         return false;
+    }
+    public static boolean checkExistRepo(){
+        if (!repoExists()){
+            errorMessage("Not in an initialized Gitlet directory.");
+            return false;
+        }
+        return true;
     }
 
 
@@ -248,6 +276,15 @@ public class Repository {
     public static void handleTheAddedFils(Map<String ,String> trackedFiles) throws IOException {
        Index.updateAddedFiles(trackedFiles);
     }
+   public static void checkChangesToCommit(){
+       List<String>rmFolders = Utils.plainFilenamesIn(Repository.STAGED_RM);
+       List<String>addFolders = Utils.plainFilenamesIn(Repository.STAGED_ADD);
+       if (rmFolders.isEmpty() && addFolders.isEmpty()){
+           errorMessage("No changes added to the commit.");
+       }
+
+   }
+
 
 
 

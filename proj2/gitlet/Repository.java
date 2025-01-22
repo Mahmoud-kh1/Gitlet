@@ -2,6 +2,8 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 import static gitlet.Main.errorMessage;
@@ -135,7 +137,7 @@ public class Repository {
 
     /** TODO : log to get information about all commits*/
 
-    public static void log (){
+    public static void log () throws IOException {
             checkExistRepo();
             Commit commit = Commit.getCurrentCommit();
             String sha1 = Head.getHeadSha1();
@@ -151,6 +153,7 @@ public class Repository {
                 }
                 File file = new File(Repository.COMMITS_DIR, commit.getParentsha());
                 commit = Utils.readObject(file, Commit.class);
+                sha1 = commit.getSha1();
             }
     }
 
@@ -174,8 +177,17 @@ public class Repository {
 
     /** TODO : checkout  function  also : look at document*/
 
-    public static void checkout (){
+    public static void checkOutFile (String fileName) throws IOException {
+        checkExistRepo();
+        Commit curCommit = Commit.getCurrentCommit();
+        checkOut(curCommit, fileName);
+    }
 
+
+    public static void checkOutFileFromGivenCommit(String commitSha1, String fileName) throws IOException {
+         checkExistRepo();
+         Commit curCommit = Commit.getCommitBySha(commitSha1);
+         checkOut(curCommit, fileName);
     }
     /** TODO : branch function to create a new branch */
 
@@ -285,6 +297,21 @@ public class Repository {
 
    }
 
+
+    public static void checkOut(Commit commit , String fileName) throws IOException {
+        String fullPath = CWD.getAbsolutePath() + File.separator + fileName;
+       Map<String , String> trackedFiles = commit.getTrackedFiles();
+       if (!trackedFiles.containsKey(fullPath)){
+           errorMessage("File does not exist in that commit.");
+       }
+       String shaBolb = trackedFiles.get(fullPath);
+       File origin = new File(fullPath);
+       File blob = new File(Repository.BLOBS_DIR, shaBolb);
+       if (!origin.exists()){
+           origin.createNewFile();
+       }
+        Files.copy(blob.toPath(), origin.toPath(), StandardCopyOption.REPLACE_EXISTING);
+    }
 
 
 

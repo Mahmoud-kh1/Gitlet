@@ -9,6 +9,8 @@ import java.util.Date; // TODO: You'll likely use this in this class
 import java.util.HashMap;
 import java.util.Map;
 
+import static gitlet.Main.errorMessage;
+
 /** Represents a gitlet commit object.
  *  TODO: It's a good idea to give a description here of what else this Class
  *  does at a high level.
@@ -71,14 +73,27 @@ public class Commit implements Serializable{
 
 
 
-    public String getSha1(){
-        return Utils.getObjectSha1(this);
+    public String getSha1() throws IOException {
+        File file = new File (Repository.COMMITS_DIR, "commit");
+        file.createNewFile();
+        Utils.writeObject(file, this);
+        String sha1 = Utils.getShaForFile(file);
+        file.delete();
+        return sha1;
     }
 
 
     public static Commit getCurrentCommit() {
         String sha1 = Head.getHeadSha1();
         File commit = new File (Repository.COMMITS_DIR, sha1);
+        Commit co = Utils.readObject(commit, Commit.class);
+        return co;
+    }
+    public static Commit getCommitBySha(String sha) throws IOException {
+        File commit = new File (Repository.COMMITS_DIR, sha);
+        if (!commit.exists()){
+            errorMessage("No commit with that id exists.");
+        }
         Commit co = Utils.readObject(commit, Commit.class);
         return co;
     }

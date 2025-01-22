@@ -66,6 +66,16 @@ public class Main {
                 // TODO : fill the status command
                 break;
             case "checkout" :
+                if (args.length == 1){
+                    errorMessage("Incorrect operands.");
+                }
+                if (args.length == 3){
+                    Repository.checkOutFile(args[2]);
+                }
+                if (args.length == 4){
+                    Repository.checkOutFileFromGivenCommit(args[1], args[3]);
+                }
+
                 // TODO : fill the checkout command
                 break;
             case "branch" :

@@ -79,18 +79,8 @@ public class Commit implements Serializable{
 
 
     public String getSha1()  {
-        File file = new File (Repository.COMMITS_DIR, "commit");
-        try {
-            file.createNewFile();
-        }catch (IOException e) {
-            e.printStackTrace();
-        }
-        Utils.writeObject(file, this);
-        String sha1 = Utils.getShaForFile(file);
-        file.delete();
-        return sha1;
+        return Utils.getObjectSha1(this);
     }
-
 
     public static Commit getCurrentCommit() {
         String sha1 = Head.getHeadSha1();

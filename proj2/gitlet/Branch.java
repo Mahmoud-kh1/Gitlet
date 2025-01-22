@@ -9,10 +9,15 @@ public class Branch {
 
 
 
-   public static void create(String branchName) throws IOException {
-       File newFile = new File(Repository.BRANCHES_DIR, branchName);
-       newFile.createNewFile();
-       Utils.writeContents(newFile, Head.getHeadSha1());
+   public static void create(String branchName) {
+       try {
+           File newFile = new File(Repository.BRANCHES_DIR, branchName);
+           newFile.createNewFile();
+           Utils.writeContents(newFile, Head.getHeadSha1());
+       }
+       catch (IOException e) {
+           e.printStackTrace();
+       }
    }
     public  static String getCurBranchName(){
         if (Repository.curBranchName == ""){

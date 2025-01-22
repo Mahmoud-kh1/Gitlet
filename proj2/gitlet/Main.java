@@ -19,7 +19,7 @@ public class Main {
             errorMessage("Incorrect operands.");
         }
     }
-    public static void main(String[] args) throws IOException {
+    public static void main(String[] args)  {
         if (args.length == 0) {
             errorMessage("Please enter a command.");
         }

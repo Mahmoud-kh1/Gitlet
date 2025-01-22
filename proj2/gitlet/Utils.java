@@ -279,8 +279,14 @@ class Utils {
             throw new RuntimeException("SHA-256 algorithm not found", e);
         }
     }
-    public static String getShaForFile(File file) throws IOException {
-        byte[] bytes = Files.readAllBytes(file.toPath());
-        return Utils.sha1(bytes);
+    public static String getShaForFile(File file) {
+        try {
+            byte[] bytes = Files.readAllBytes(file.toPath());
+            return Utils.sha1(bytes);
+        }
+        catch (IOException excp) {
+            excp.printStackTrace();
+        }
+        return "";
     }
 }

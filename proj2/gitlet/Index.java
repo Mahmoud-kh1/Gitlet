@@ -10,7 +10,7 @@ import static gitlet.Main.errorMessage;
 
 public  final class Index {
 
-       public static void stageForAddition(String fullPath) throws IOException {
+       public static void stageForAddition(String fullPath) {
            String hashedPath = Utils.hashPath(fullPath);
            removeFromStageForRemoval(hashedPath);
            removeFromStageForAddition(hashedPath);
@@ -27,7 +27,7 @@ public  final class Index {
 
 
 
-     public static void stageForRemoval(String fullPath) throws IOException {
+     public static void stageForRemoval(String fullPath)  {
            String hashedPath = Utils.hashPath(fullPath);
            boolean inAdd = removeFromStageForAddition(hashedPath);
            Commit commit = Commit.getCurrentCommit();
@@ -46,26 +46,41 @@ public  final class Index {
 
      }
 
-     public  static void addToRemove(String hashedPath, String fullPath) throws IOException {
+     public  static void addToRemove(String hashedPath, String fullPath)  {
            File folder = new File (Repository.STAGED_RM, hashedPath);
            folder.mkdir();
            File pathh = new File(folder, "path");
-           pathh.createNewFile();
+           try {
+               pathh.createNewFile();
+           }
+           catch (IOException e) {
+               e.printStackTrace();
+           }
            Utils.writeContents(pathh, fullPath);
      }
 
 
-      public static void addThisFile(String hashedPath, File currFile, String fullPath) throws IOException {
+      public static void addThisFile(String hashedPath, File currFile, String fullPath)  {
            File folder  = new File(Repository.STAGED_ADD, hashedPath);
            folder.mkdir();
            File path = new File(folder, "path");
-           path.createNewFile();
+           try {
+               path.createNewFile();
+           }
+           catch (IOException e) {
+               e.printStackTrace();
+           }
            Utils.writeContents(path, fullPath);
            File newFile = new File(folder, currFile.getName());
            if (newFile.exists()) {
                newFile.delete();
            }
-          Files.copy(currFile.toPath(), newFile.toPath());
+           try {
+               Files.copy(currFile.toPath(), newFile.toPath());
+           }
+           catch (IOException e) {
+               e.printStackTrace();
+           }
       }
 
 
@@ -110,7 +125,7 @@ public  final class Index {
            return rFiles;
     }
 
-    public static void updateAddedFiles(Map<String, String> trackedFiles) throws IOException {
+    public static void updateAddedFiles(Map<String, String> trackedFiles)  {
            List<String> folders = Utils.plainFilenamesIn(Repository.STAGED_ADD);
            if (!folders.isEmpty()) {
                for (String sha1Path : folders) {

@@ -60,7 +60,7 @@ public class Repository {
 
 
     /**  init function to initialize repo */
-    public  static void init () throws IOException {
+    public  static void init ()  {
         /** first we need to check if the repo already exist*/
          if (repoExists()){
              errorMessage("A Gitlet version-control system already exists in the current directory.");
@@ -86,7 +86,7 @@ public class Repository {
 
     /** TODO : add function to stage files */
 
-    public static void add (String fileName) throws IOException {
+    public static void add (String fileName)  {
         checkExistRepo();
         String fullPath = CWD.getAbsolutePath() + File.separator + fileName;
         File file = new File(fullPath);
@@ -99,7 +99,7 @@ public class Repository {
 
     /** TODO : commit function to commit  files in index area*/
 
-    public static void commit (String message) throws IOException {
+    public static void commit (String message)  {
 
         checkExistRepo();
 
@@ -129,7 +129,7 @@ public class Repository {
 
     /** TODO : rm  : look at document */
 
-    public static void rm (String fileName) throws IOException {
+    public static void rm (String fileName)  {
         checkExistRepo();
        String fullPath = CWD.getAbsolutePath() + File.separator + fileName;
        Index.stageForRemoval(fullPath);
@@ -137,7 +137,7 @@ public class Repository {
 
     /** TODO : log to get information about all commits*/
 
-    public static void log () throws IOException {
+    public static void log ()   {
             checkExistRepo();
             Commit commit = Commit.getCurrentCommit();
             String sha1 = Head.getHeadSha1();
@@ -177,14 +177,14 @@ public class Repository {
 
     /** TODO : checkout  function  also : look at document*/
 
-    public static void checkOutFile (String fileName) throws IOException {
+    public static void checkOutFile (String fileName) {
         checkExistRepo();
         Commit curCommit = Commit.getCurrentCommit();
         checkOut(curCommit, fileName);
     }
 
 
-    public static void checkOutFileFromGivenCommit(String commitSha1, String fileName) throws IOException {
+    public static void checkOutFileFromGivenCommit(String commitSha1, String fileName) {
          checkExistRepo();
          Commit curCommit = Commit.getCommitBySha(commitSha1);
          checkOut(curCommit, fileName);
@@ -215,15 +215,20 @@ public class Repository {
 
 
 
-   private static void createRepoFilesAndFolders() throws IOException {
+   private static void createRepoFilesAndFolders()  {
        GITLET_DIR.mkdir();
        COMMITS_DIR.mkdir();
        BLOBS_DIR.mkdir();
        BRANCHES_DIR.mkdir();
        STAGED_ADD.mkdir();
        STAGED_RM.mkdir();
-       HEAD_FILE.createNewFile();
-       CUR_BRANCH.createNewFile();
+       try {
+           HEAD_FILE.createNewFile();
+           CUR_BRANCH.createNewFile();
+       }
+       catch (IOException e){
+           e.printStackTrace();
+       }
    }
 
 
@@ -257,7 +262,7 @@ public class Repository {
    }
 
    /** create branch with name*/
-   public static void createBranch(String branchName) throws IOException {
+   public static void createBranch(String branchName)  {
        Branch.create(branchName);
    }
    /** set the current branch name */
@@ -265,7 +270,7 @@ public class Repository {
        Branch.setCurrentBranchName(branchName);
    }
    /** just for test intial commits */
-   public static void readHeadCommit() throws IOException {
+   public static void readHeadCommit(){
        File file = new File(Repository.COMMITS_DIR, getHeadSha1());
        Commit commit = Utils.readObject(file, Commit.class);
        System.out.println(commit.getSha1());
@@ -285,7 +290,7 @@ public class Repository {
        }
        return trakedFiles;
     }
-    public static void handleTheAddedFils(Map<String ,String> trackedFiles) throws IOException {
+    public static void handleTheAddedFils(Map<String ,String> trackedFiles)  {
        Index.updateAddedFiles(trackedFiles);
     }
    public static void checkChangesToCommit(){
@@ -298,7 +303,7 @@ public class Repository {
    }
 
 
-    public static void checkOut(Commit commit , String fileName) throws IOException {
+    public static void checkOut(Commit commit , String fileName)  {
         String fullPath = CWD.getAbsolutePath() + File.separator + fileName;
        Map<String , String> trackedFiles = commit.getTrackedFiles();
        if (!trackedFiles.containsKey(fullPath)){
@@ -308,9 +313,21 @@ public class Repository {
        File origin = new File(fullPath);
        File blob = new File(Repository.BLOBS_DIR, shaBolb);
        if (!origin.exists()){
-           origin.createNewFile();
+           try {
+               origin.createNewFile();
+
+           }
+           catch (IOException e){
+               e.printStackTrace();
+           }
        }
-        Files.copy(blob.toPath(), origin.toPath(), StandardCopyOption.REPLACE_EXISTING);
+       try{
+           Files.copy(blob.toPath(), origin.toPath(), StandardCopyOption.REPLACE_EXISTING);
+       }
+       catch (IOException e){
+           e.printStackTrace();
+       }
+
     }
 
 

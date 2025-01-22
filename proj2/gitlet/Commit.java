@@ -39,14 +39,14 @@ public class Commit implements Serializable{
 
 
     /** constructor to make the intial commit */
-    public Commit() throws IOException {
+    public Commit()  {
         this.message = "initial commit";
         this.parentsha = "";
         this.timestamp = new Date(0);
         this.trackedFiles = new HashMap<>();
          saveCommit();
     }
-    public Commit (String message, Map<String, String> trackedFiles) throws IOException {
+    public Commit (String message, Map<String, String> trackedFiles)  {
         this.message = message;
         this.parentsha = Head.getHeadSha1();
         this.timestamp = new Date();
@@ -63,19 +63,28 @@ public class Commit implements Serializable{
 
 
 
-   public void saveCommit() throws IOException {
+   public void saveCommit()  {
         String sha1 = this.getSha1();
         // here we create a file to serialize in it with name with sha in floder commits
        File commit = new File (Repository.COMMITS_DIR, sha1);
-       commit.createNewFile();
+       try {
+           commit.createNewFile();
+       }
+       catch (IOException e) {
+           e.printStackTrace();
+       }
        Utils.writeObject(commit, this);
    }
 
 
 
-    public String getSha1() throws IOException {
+    public String getSha1()  {
         File file = new File (Repository.COMMITS_DIR, "commit");
-        file.createNewFile();
+        try {
+            file.createNewFile();
+        }catch (IOException e) {
+            e.printStackTrace();
+        }
         Utils.writeObject(file, this);
         String sha1 = Utils.getShaForFile(file);
         file.delete();
@@ -89,7 +98,7 @@ public class Commit implements Serializable{
         Commit co = Utils.readObject(commit, Commit.class);
         return co;
     }
-    public static Commit getCommitBySha(String sha) throws IOException {
+    public static Commit getCommitBySha(String sha)  {
         File commit = new File (Repository.COMMITS_DIR, sha);
         if (!commit.exists()){
             errorMessage("No commit with that id exists.");

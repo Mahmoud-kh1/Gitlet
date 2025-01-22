@@ -75,6 +75,9 @@ public class Main {
                 if (args.length == 4){
                     Repository.checkOutFileFromGivenCommit(args[1], args[3]);
                 }
+                else {
+                    errorMessage("Incorrect operands.");
+                }
 
                 // TODO : fill the checkout command
                 break;

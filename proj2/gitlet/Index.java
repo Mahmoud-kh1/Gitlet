@@ -10,15 +10,23 @@ import static gitlet.Main.errorMessage;
 
 public  final class Index {
 
-       public static void stageForAddition(String fullPath) {
+
+    /**
+     * stage the file with given path to stage for addtion if it will
+     * @param fullPath full path of the file will be staged for addition
+     */
+    public static void stageForAddition(String fullPath) {
+           // get hash of the path
            String hashedPath = Utils.hashPath(fullPath);
+           // we remove the file from stage for removal if it exist
            removeFromStageForRemoval(hashedPath);
+           // also remove it from additoin if it exist
            removeFromStageForAddition(hashedPath);
-           /** when I add if it's not tracked in current commit */
+
            Commit currCommit = Commit.getCurrentCommit();
            Map<String,String>trackedFilesForCurrentCommit = currCommit.getTrackedFiles();
            File currFile = new File(fullPath);
-           /** we add if it's not tracked and if it's not the same sha1 */
+           // we add the file if not tracked in the current commit or it's different (sha1 is different from it's blob in the current commit)
            if(!trackedFilesForCurrentCommit.containsKey(fullPath) || !trackedFilesForCurrentCommit.get(fullPath).equals(Utils.getShaForFile(currFile))){
                addThisFile(hashedPath, currFile, fullPath);
            }
@@ -26,19 +34,24 @@ public  final class Index {
        }
 
 
-
+    /**
+     * stage the file for removal with the given path
+     * @param fullPath path of the file will be staged for removal
+     */
      public static void stageForRemoval(String fullPath)  {
            String hashedPath = Utils.hashPath(fullPath);
+           // boolean to mark if the file in stagged for addition and also the function delete it if exist
            boolean inAdd = removeFromStageForAddition(hashedPath);
            Commit commit = Commit.getCurrentCommit();
            Map<String,String>trackedFilesForCurrentCommit = commit.getTrackedFiles();
+           // if the file not tracked in the current and not in staged for addtion no reason for delete
            if (!inAdd && !trackedFilesForCurrentCommit.containsKey(fullPath)) {
                errorMessage("No reason to remove the file.");
                System.exit(0);
            }
            File currFile = new File(fullPath);
 
-           /** we don't remove the file unless it was tracked in the current commit */
+           // we don't remove the file unless it was tracked in the current commit   and also it exist
            if (currFile.exists() && trackedFilesForCurrentCommit.containsKey(fullPath)) {
                currFile.delete();
            }
@@ -46,6 +59,13 @@ public  final class Index {
 
      }
 
+
+    /**
+     * create a folder in Staged For removal  with name the hash path and inside it two files
+     * one the file itself and one for the path
+     * @param hashedPath hashed value for the path of the file
+     * @param fullPath the path of the file
+     */
      public  static void addToRemove(String hashedPath, String fullPath)  {
            File folder = new File (Repository.STAGED_RM, hashedPath);
            folder.mkdir();
@@ -60,6 +80,11 @@ public  final class Index {
      }
 
 
+      /** create a folder in Staged For addition   with name the hash path and inside it two files
+      * one the file itself and one for the path
+     * @param hashedPath hashed value for the path of the file
+      *@param fullPath the path of the file
+     */
       public static void addThisFile(String hashedPath, File currFile, String fullPath)  {
            File folder  = new File(Repository.STAGED_ADD, hashedPath);
            folder.mkdir();
@@ -85,6 +110,13 @@ public  final class Index {
 
 
 
+    /**
+     * remove the file and it's folder from stage form removal it exist
+     * @param hasedPath the name of the folder contain two file one is the path and on the file itself
+     * @return ture if it remove this file and false if it's not exist
+     *
+     *
+     */
        public static boolean removeFromStageForRemoval(String hasedPath){
            File file = new File(Repository.STAGED_RM, hasedPath);
            if (!file.exists()){
@@ -100,7 +132,11 @@ public  final class Index {
        }
 
 
-
+    /**
+     * remove the file and it's folder from stage form addition it exist
+     * @param hasedPath the name of the folder contain two file one is the path and on the file itself
+     * @return ture if it remove this file and false if it's not exist
+     */
     public static boolean removeFromStageForAddition(String hasedPath){
         File file = new File(Repository.STAGED_ADD, hasedPath);
         if (!file.exists()){
@@ -115,6 +151,10 @@ public  final class Index {
         return true;
     }
 
+    /**
+     * get the paths in the in stage area for removal
+     * @return List contain this Paths
+     */
     public  static List<String> getRemovedPaths(){
            List<String> rFiles = Utils.plainFilenamesIn(Repository.STAGED_RM);
            for (String filename : rFiles){
@@ -125,6 +165,10 @@ public  final class Index {
            return rFiles;
     }
 
+    /**
+     * handle added file add them to our map and create a new blob for them
+     * @param trackedFiles map contain the paths of tracked file and sha1 for them
+     */
     public static void updateAddedFiles(Map<String, String> trackedFiles)  {
            List<String> folders = Utils.plainFilenamesIn(Repository.STAGED_ADD);
            if (!folders.isEmpty()) {
@@ -150,6 +194,9 @@ public  final class Index {
     }
 
 
+    /**
+     * clear stagged Area
+     */
     public static void clearIndex(){
            List<String> rm = Utils.plainFilenamesIn(Repository.STAGED_RM);
            List<String> ad = Utils.plainFilenamesIn(Repository.STAGED_ADD);

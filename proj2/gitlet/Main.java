@@ -7,36 +7,43 @@ import java.io.IOException;
  */
 public class Main {
 
-    /** Usage: java gitlet.Main ARGS, where ARGS contains
-     *  <COMMAND> <OPERAND1> <OPERAND2> ... 
+    /**
+     * this fucntion is to print a given message and then stop the program
+     * it happens when somthing goes wrong
+     * @param message
      */
     public static void errorMessage(String message){
         System.out.println(message);
         System.exit(0);
     }
+
+    /**
+     * function to validate number of operands entered in command line
+     * @param args array of Strings contain the operands
+     * @param n the number we compare with it  the length of the array
+     */
     public static void validateNumArgs(String[] args, int n) {
         if (args.length != n) {
             errorMessage("Incorrect operands.");
         }
     }
+    /** Usage: java gitlet.Main ARGS, where ARGS contains
+     *  <COMMAND> <OPERAND1> <OPERAND2> ...
+     */
     public static void main(String[] args)  {
         if (args.length == 0) {
             errorMessage("Please enter a command.");
         }
-        // TODO : create instance of repo to work with it
         String firstArg = args[0];
         switch(firstArg) {
             case "init":
                 validateNumArgs(args, 1);
                 Repository.init();
-                // TODO: handle the `init` command
                 break;
             case "add":
                 validateNumArgs(args, 2);
                 Repository.add(args[1]);
-                // TODO: handle the `add [filename]` command
                 break;
-            // TODO: FILL THE REST IN
             case "commit":
                 if (args.length == 1){
                     System.out.println("Please enter a commit message.");
@@ -44,17 +51,14 @@ public class Main {
                 }
                 validateNumArgs(args, 2);
                 Repository.commit(args[1]);
-                // TODO : fill commit command
                 break;
             case "rm":
                 validateNumArgs(args, 2);
                 Repository.rm(args[1]);
-                // TODO : fill rm command
                 break;
             case "log" :
                 validateNumArgs(args, 1);
                 Repository.log();
-                //TODO : fill log command
                 break;
             case "global-log" :
                 // TODO : fill global command
@@ -79,7 +83,6 @@ public class Main {
                     errorMessage("Incorrect operands.");
                 }
 
-                // TODO : fill the checkout command
                 break;
             case "branch" :
                 // TODO : fill branch command

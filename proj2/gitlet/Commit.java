@@ -1,6 +1,5 @@
 package gitlet;
 
-// TODO: any imports you need here
 
 import java.io.File;
 import java.io.IOException;
@@ -24,17 +23,11 @@ import static gitlet.Main.errorMessage;
  *  @author TODO
  */
 public class Commit implements Serializable{
-    /**
-     * TODO: add instance variables here.
-     *
-     * List all instance variables of the Commit class here with a useful
-     * comment above them describing what that variable represents and how that
-     * variable is used. We've provided one example for `message`.
-     */
-    /** The message of this Commit. */
+
     private  String message;
     private  String parentsha;
     private  Date timestamp;
+    /** the key is the path and the value is the sha1 this commit track for this path */
     private Map<String, String>trackedFiles;
 
 
@@ -46,6 +39,7 @@ public class Commit implements Serializable{
         this.trackedFiles = new HashMap<>();
          saveCommit();
     }
+
     public Commit (String message, Map<String, String> trackedFiles)  {
         this.message = message;
         this.parentsha = Head.getHeadSha1();
@@ -55,14 +49,9 @@ public class Commit implements Serializable{
     }
 
 
-
-
-
-
-
-
-
-
+    /**
+     * serialize  a commit inside a commits dir inside file with name of it's sha1
+     */
    public void saveCommit()  {
         String sha1 = this.getSha1();
         // here we create a file to serialize in it with name with sha in floder commits
@@ -77,11 +66,18 @@ public class Commit implements Serializable{
    }
 
 
-
+    /** return sha1 for this object
+     * @return sha1
+     * */
     public String getSha1()  {
         return Utils.getObjectSha1(this);
     }
 
+
+    /**
+     * get current commit
+     * @return  commit
+     */
     public static Commit getCurrentCommit() {
         String sha1 = Head.getHeadSha1();
         File commit = new File (Repository.COMMITS_DIR, sha1);
@@ -96,6 +92,8 @@ public class Commit implements Serializable{
         Commit co = Utils.readObject(commit, Commit.class);
         return co;
     }
+
+
     public Date getTimestamp() {
         return timestamp;
     }

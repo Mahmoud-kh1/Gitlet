@@ -176,39 +176,163 @@ public class Repository {
     public static void log ()   {
             checkExistRepo();
             Commit commit = Commit.getCurrentCommit();
-            String sha1 = Head.getHeadSha1();
             while(true){
-                System.out.println("===");
-                System.out.println("commit " + sha1);
-                System.out.println("Date: " + HelperMethods.formateDate(commit.getTimestamp()) + " -0800");
-
-                System.out.println(commit.getMessage());
-                System.out.println();
+                commit.displayCommit();
                 if (commit.getParentsha().equals("")){
                     break;
                 }
                 File file = new File(Repository.COMMITS_DIR, commit.getParentsha());
                 commit = Utils.readObject(file, Commit.class);
-                sha1 = commit.getSha1();
             }
     }
 
-    /** TODO : global  also look at document*/
+    /**
+     * display all commits information
+     * */
 
     public static void globalLog (){
-
+        checkExistRepo();
+        List<String>S = Utils.plainFilenamesIn(Repository.COMMITS_DIR);
+        for(String C : S){
+            File commit = new File(Repository.COMMITS_DIR, C);
+            Commit curCommit = Utils.readObject(commit, Commit.class);
+            curCommit.displayCommit();
+        }
     }
 
-    /** TODO : find function : look at document*/
 
-    public static void find (){
 
+    /**
+     *  display all sha1 for any commit have A given message
+     * @param message message we will search for
+     * */
+
+    public static void find (String message)  {
+          Commit.find(message);
     }
 
     /** TODO : status function : look at document*/
 
     public static void status (){
+        System.out.println("=== Branches ===");
+        List<String>branches = Branch.getBranchesNames();
+        String curBranch = Branch.getCurBranchName();
+        for(String Branch : branches){
+            if(Branch.equals(curBranch)){
+                System.out.println("*" + Branch);
+            }
+            else System.out.println(Branch);
+        }
+        System.out.println();
+        System.out.println("=== Staged Files ===");
+        List<String> staggedFiles = Index.getStaggedFilesNames();
+        for(String file: staggedFiles){
+            System.out.println(file);
+        }
+        System.out.println();
+        System.out.println("=== Removed Files ===");
+        List<String> removedFiles= Index.getRemovedFilesNames();
+        for(String file: removedFiles){
+            System.out.println(file);
+        }
+        System.out.println();
+        System.out.println("=== Modifications Not Staged For Commit ===");
+        List<String> Modi = new ArrayList<>();
+        List<String>untracked = new ArrayList<>();
+         getModifidNotStaged(Modi, untracked);
+        for(String file: Modi){
+            System.out.println(file);
+        }
+        System.out.println();
+        System.out.println("=== Untracked Files ===");
+        for(String file: untracked){
+            System.out.println(file);
+        }
+        System.out.println();
 
+
+
+
+    }
+
+
+
+
+    public static void getModifidNotStaged(List<String> mo, List<String> untraked ){
+        Commit curCommit = Commit.getCurrentCommit();
+        Map<String, String> trackedFiles = curCommit.getTrackedFiles();
+       getModifid(mo, trackedFiles, untraked);
+       getDeleted(mo, trackedFiles);
+       mo.sort(null);
+
+
+    }
+    public static void getDeleted(List<String> mo, Map<String, String> trackedFiles){
+        List<String>stagedFiles = Index.getStaggedPaths();
+        if(!stagedFiles.isEmpty()) {
+            for (String path : stagedFiles) {
+                File file = new File(path);
+                if (!file.exists()) {
+                    String relativePath = CWD.toURI().relativize(file.toURI()).getPath();
+                    mo.add(relativePath+ " " + "(deleted)");
+                }
+            }
+        }
+        for(String key: trackedFiles.keySet()){
+            File file = new File(key);
+            if(!Index.isStaggedForRemoval(key) && !file.exists()){
+                String relativePath = CWD.toURI().relativize(file.toURI()).getPath();
+                mo.add(relativePath+ " " + "(deleted)");
+            }
+        }
+        Set<String> S = new HashSet<>(mo);
+        mo = new ArrayList<>(S);
+    }
+    public static List<String> getModifid(List<String> mo, Map<String, String> trackedFiles, List<String> untracked){
+        Stack<File>folders = new Stack<>();
+
+        folders.push(CWD);
+        while(!folders.isEmpty()){
+            File fold = folders.pop();
+            List<String> files = Utils.plainFilenamesIn(fold);
+            for(String file : files){
+                File fileOrFolder = new File(fold, file);
+                if (fileOrFolder.isDirectory() ){
+                    if(!file.equals(".gitlet")) {
+                        folders.push(fileOrFolder);
+                    }
+                }
+                else{
+                    if(!trackedFiles.containsKey(fileOrFolder.getAbsolutePath())) {
+                        String relativePath = CWD.toURI().relativize(fileOrFolder.toURI()).getPath();
+                             untracked.add(relativePath);
+                    }
+
+                    if(checkModificatoin(fileOrFolder, trackedFiles)){
+                        String relativePath = CWD.toURI().relativize(fileOrFolder.toURI()).getPath();
+                        mo.add(relativePath+ " " + "(modified)");
+                    }
+                }
+
+            }
+
+        }
+        return mo;
+    }
+
+    public static boolean checkModificatoin(File curFile, Map<String, String> trackedFiles){
+          if (Index.isStaggedForAddition(curFile)){
+              if(Index.isStaggedForAddAndDifferFromCWD(curFile)){
+                  return true;
+              }
+          }
+          else if (trackedFiles.containsKey(curFile.getPath())){
+              if(!trackedFiles.get(curFile.getAbsolutePath()).equals(Utils.getShaForFile(curFile))){
+                   return true;
+              }
+          }
+
+          return false;
     }
 
     /**
@@ -343,18 +467,10 @@ public class Repository {
    }
 
 
-   /** just for test intial commits */
-   public static void readHeadCommit(){
-       File file = new File(Repository.COMMITS_DIR, getHeadSha1());
-       Commit commit = Utils.readObject(file, Commit.class);
-       System.out.println(commit.getSha1());
-       System.out.println(commit.getTimestamp());
-       System.out.println(commit.getParentsha());
-       Map<String ,String> trackedFilesForNewCommit = commit.getTrackedFiles();
-       trackedFilesForNewCommit.forEach((key, value) -> {
-           System.out.println("Key: " + key + ", Value: " + value);
-       });
-   }
+   /**
+    * display  information about a given Commit
+    * @param commit to be displayed
+    *  */
 
 
 

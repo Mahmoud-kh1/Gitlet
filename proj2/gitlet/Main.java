@@ -61,12 +61,16 @@ public class Main {
                 Repository.log();
                 break;
             case "global-log" :
-                // TODO : fill global command
+                validateNumArgs(args, 1);
+                Repository.globalLog();
                 break;
             case  "find" :
-                // TODO : fill find command
+                validateNumArgs(args, 2);
+                Repository.find(args[1]);
                 break;
             case "status" :
+                validateNumArgs(args, 1);
+                Repository.status();
                 // TODO : fill the status command
                 break;
             case "checkout" :

@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.io.Serializable;
 import java.util.Date; // TODO: You'll likely use this in this class
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static gitlet.Main.errorMessage;
@@ -84,6 +85,7 @@ public class Commit implements Serializable{
         Commit co = Utils.readObject(commit, Commit.class);
         return co;
     }
+
     public static Commit getCommitBySha(String sha)  {
         File commit = new File (Repository.COMMITS_DIR, sha);
         if (!commit.exists()){
@@ -93,6 +95,31 @@ public class Commit implements Serializable{
         return co;
     }
 
+
+
+    public void displayCommit(){
+        System.out.println("===");
+        System.out.println("commit " + this.getSha1());
+        System.out.println("Date: " + HelperMethods.formateDate(this.getTimestamp()) + " -0800");
+        System.out.println(this.getMessage());
+        System.out.println();
+    }
+
+    public static void find(String message){
+        List<String> commits = Utils.plainFilenamesIn(Repository.COMMITS_DIR);
+        boolean found = false;
+        for(String C : commits){
+            File file = new File(Repository.COMMITS_DIR, C);
+            Commit commit = Utils.readObject(file, Commit.class);
+            if (commit.getMessage().equals(message)){
+                found = true;
+                System.out.println(commit.getSha1());
+            }
+        }
+        if (!found){
+            errorMessage("Found no commit with that message.");
+        }
+    }
 
     public Date getTimestamp() {
         return timestamp;

@@ -3,6 +3,7 @@ package gitlet;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 
@@ -157,12 +158,15 @@ public  final class Index {
      */
     public  static List<String> getRemovedPaths(){
            List<String> rFiles = Utils.plainFilenamesIn(Repository.STAGED_RM);
+           List<String> removedPaths = new ArrayList<>();
            for (String filename : rFiles){
-               File file = new File(filename, "path");
-               String p = Utils.readContentsAsString(file);
-               rFiles.add(p);
+               File fold = new  File(Repository.STAGED_RM, filename);
+               File fiile = new File(fold, "path");
+                   String p = Utils.readContentsAsString(fiile);
+                   removedPaths.add(p);
+
            }
-           return rFiles;
+           return removedPaths;
     }
 
     /**
@@ -194,6 +198,41 @@ public  final class Index {
     }
 
 
+    public static List<String> getStaggedFilesNames(){
+        List<String>addFolder = Utils.plainFilenamesIn(Repository.STAGED_ADD);
+        List<String>addedFiles = new ArrayList<String>();
+        for(String fo : addFolder){
+            File file = new File(Repository.STAGED_ADD, fo);
+            List<String> files = Utils.plainFilenamesIn(file);
+            for(String filename : files){
+                if (!filename.equals("path")) {
+                    addedFiles.add(filename);
+                }
+            }
+        }
+        addedFiles.sort(null);
+        return addedFiles;
+    }
+
+
+
+    public static List<String> getRemovedFilesNames(){
+        List<String>removePaths = getRemovedPaths();
+        List<String> removedFilesNames = new ArrayList<String>();
+        for(String path : removePaths){
+            File file = new File(path);
+            removedFilesNames.add(file.getName());
+        }
+
+        return removedFilesNames;
+    }
+
+
+
+
+
+
+
     /**
      * clear stagged Area
      */
@@ -208,6 +247,59 @@ public  final class Index {
            }
     }
 
+    public static boolean isStaggedForAddition(File curFile){
+        String path = curFile.getAbsolutePath();
+        String hashPath = Utils.hashPath(path);
+        File fold = new File(Repository.STAGED_ADD, hashPath);
+        if (fold.exists()) {
+            return true;
+        }
+        else return false;
+    }
+    public static boolean isStaggedForAddAndDifferFromCWD(File curFile){
+        String path = curFile.getAbsolutePath();
+        String hashPath = Utils.hashPath(path);
+        File fold = new File(Repository.STAGED_ADD, hashPath);
+        List<String> files = Utils.plainFilenamesIn(fold);
+        File stageFile = null;
+        for(String filename : files){
+            if (filename.equals("path")) {
+                continue;
+            }
+            stageFile = new File(fold, filename);
+        }
+        return !Utils.getShaForFile(stageFile).equals(Utils.getShaForFile(curFile));
+
+    }
+
+    public static List<String> getStaggedPaths(){
+        List<String>addFolder = Utils.plainFilenamesIn(Repository.STAGED_ADD);
+        List<String>addedPaths = new ArrayList<String>();
+            for (String fo : addFolder) {
+                File file = new File(Repository.STAGED_ADD, fo);
+                List<String> files = Utils.plainFilenamesIn(file);
+                for (String filename : files) {
+                    if (filename.equals("path")) {
+                        File pa = new File(file, "path");
+                        String p = Utils.readContentsAsString(pa);
+                        addedPaths.add(p);
+                    }
+                }
+            }
+
+        return addedPaths;
+    }
+
+
+
+    public static boolean isStaggedForRemoval(String path){
+        String hashPath = Utils.hashPath(path);
+        File fold = new File(Repository.STAGED_RM, hashPath);
+        if (fold.exists()) {
+            return true;
+        }
+        return false;
+    }
 
 
 

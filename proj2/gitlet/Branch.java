@@ -2,6 +2,9 @@ package gitlet;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Files;
+import java.util.ArrayList;
+import java.util.List;
 
 public class Branch {
 
@@ -50,5 +53,14 @@ public class Branch {
        String name = Branch.getCurBranchName();
        File branchFile = new File(Repository.BRANCHES_DIR, name);
        Utils.writeContents(branchFile, sha1);
+    }
+
+
+
+    public static List<String> getBranchesNames(){
+        List<String> branchNames;
+        branchNames = Utils.plainFilenamesIn(Repository.BRANCHES_DIR);
+        branchNames.sort(null);
+        return branchNames;
     }
 }

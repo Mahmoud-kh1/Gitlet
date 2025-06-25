@@ -1,0 +1,11 @@
+# Exclude Python files from language statistics
+*.py linguist-detectable=false
+
+# Exclude Jupyter notebooks
+*.ipynb linguist-detectable=false
+
+# Optional: exclude shell scripts
+*.sh linguist-detectable=false
+
+# Mark Java files explicitly as Java
+*.java linguist-language=Java

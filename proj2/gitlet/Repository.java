@@ -7,10 +7,8 @@ import java.nio.file.StandardCopyOption;
 import java.util.*;
 
 import static gitlet.Main.errorMessage;
-
-
 /** Represents a gitlet repository.
- * My architecture   for gitlet is already simple as git
+ * My architecture   for gitlet is already simple as git 
  * ----gitlet(dir)
  *      -- Blobs(dir)
  *          - files with name sha1 for it's content
@@ -372,16 +370,314 @@ public class Repository {
 
     /** TODO : reset look at document*/
 
-    public static void reset (){
+    public static void reset (String commitId){
+       Commit targetCommit = Commit.getCommitBySha(commitId);
+        if (targetCommit == null) {
+            System.out.println("No commit with that id exists.");
+            return;
+        }
 
+       Commit currentCommit = Commit.getCommitBySha(commitId);
+       Map<String, String>currentTrackedFiles = currentCommit.getTrackedFiles();
+       Map<String, String>tragetTrackedFiles = currentCommit.getTrackedFiles();
+
+
+        for (Map.Entry<String, String> entry : tragetTrackedFiles.entrySet()) {
+            String filePath = entry.getKey();
+            String blobId = entry.getValue();
+            File f = new File(filePath);
+            byte[] contents = Utils.readContents(new File(Repository.BLOBS_DIR, blobId));
+            Utils.writeContents(f, contents);
+        }
+
+
+        for (String fileName : currentTrackedFiles.keySet()) {
+            if (!tragetTrackedFiles.containsKey(fileName)) {
+                File f = new File(Repository.CWD, fileName);
+                if (f.exists()) {
+                    f.delete();
+                }
+            }
+        }
+
+        Head.setHead(commitId);
+        Index.clearIndex();
     }
 
-    /** TODO : merge look at document*/
 
-    public static void merge (){
+    public static void merge(String branchName) {
+        checkExistRepo();
 
+        // Failure: uncommitted staged changes
+        if (!Utils.plainFilenamesIn(STAGED_ADD).isEmpty() || !Utils.plainFilenamesIn(STAGED_RM).isEmpty()) {
+            errorMessage("You have uncommitted changes.");
+        }
+
+        // Failure: branch existence
+        File branchFile = new File(BRANCHES_DIR, branchName);
+        if (!branchFile.exists()) {
+            errorMessage("A branch with that name does not exist.");
+        }
+
+        // Failure: self-merge
+        String curBranch = Branch.getCurBranchName();
+        if (branchName.equals(curBranch)) {
+            errorMessage("Cannot merge a branch with itself.");
+        }
+
+        // Heads and commits
+        String currentHeadSha = Head.getHeadSha1();
+        String givenHeadSha = Utils.readContentsAsString(branchFile);
+        Commit currentCommit = Commit.getCommitBySha(currentHeadSha);
+        Commit givenCommit = Commit.getCommitBySha(givenHeadSha);
+
+        // Find split point
+        String splitSha = findSplitPoint(currentHeadSha, givenHeadSha);
+
+        // Ancestor cases
+        if (splitSha.equals(givenHeadSha)) {
+            System.out.println("Given branch is an ancestor of the current branch.");
+            return;
+        }
+        if (splitSha.equals(currentHeadSha)) {
+            // Fast-forward: check out given into CWD and move current branch pointer
+            checkoutToCommit(givenCommit);
+            Head.setHead(givenHeadSha);
+            Branch.setLastCommitInCurrentBranch(givenHeadSha);
+            Index.clearIndex();
+            System.out.println("Current branch fast-forwarded.");
+            return;
+        }
+
+        // Maps for decision logic
+        Commit splitCommit = Commit.getCommitBySha(splitSha);
+        Map<String, String> splitTracked = splitCommit.getTrackedFiles();
+        Map<String, String> currTracked  = currentCommit.getTrackedFiles();
+        Map<String, String> givenTracked = givenCommit.getTrackedFiles();
+
+        // Untracked-file-in-the-way protection (before doing anything)
+        if (existsUntrackedFileInTheWay(currTracked, splitTracked, givenTracked)) {
+            errorMessage("There is an untracked file in the way; delete it, or add and commit it first.");
+        }
+
+        // Union of paths
+        Set<String> allPaths = new HashSet<>();
+        allPaths.addAll(splitTracked.keySet());
+        allPaths.addAll(currTracked.keySet());
+        allPaths.addAll(givenTracked.keySet());
+
+        boolean encounteredConflict = false;
+
+        // Apply per-file rules
+        for (String path : allPaths) {
+            String s = splitTracked.get(path);
+            String c = currTracked.get(path);
+            String g = givenTracked.get(path);
+
+
+            java.util.function.Consumer<String> stageBlobFromGiven = p -> {
+                writeBlobToPath(g, p);
+                Index.stageForAddition(p);
+            };
+            java.util.function.Consumer<String> stageRemoval = p -> {
+                Index.stageForRemoval(p);
+            };
+
+
+
+            if (s == null) {
+                if (g != null && c == null) {
+                    stageBlobFromGiven.accept(path);
+                } else if (g != null && c != null) {
+                    if (!c.equals(g)) {
+                        writeConflict(path, c, g);
+                        Index.stageForAddition(path);
+                        encounteredConflict = true;
+                    }
+                }
+
+                continue;
+            }
+
+
+            boolean cUnchangedFromSplit = Objects.equals(c, s);
+            boolean gUnchangedFromSplit = Objects.equals(g, s);
+
+            if (cUnchangedFromSplit && gUnchangedFromSplit) {
+                continue;
+            }
+
+            if (cUnchangedFromSplit && !gUnchangedFromSplit) {
+                if (g == null) {
+                    stageRemoval.accept(path);
+                } else {
+                    stageBlobFromGiven.accept(path);
+                }
+                continue;
+            }
+
+            if (!cUnchangedFromSplit && gUnchangedFromSplit) {
+                continue;
+            }
+
+            if (Objects.equals(c, g)) {
+                continue;
+            } else {
+                writeConflict(path, c, g);
+                Index.stageForAddition(path);
+                encounteredConflict = true;
+            }
+        }
+
+        Map<String, String> nextTracked = new HashMap<>(currentCommit.getTrackedFiles());
+        removeThePathsInRemoval(nextTracked);
+        handleTheAddedFils(nextTracked);
+
+        String msg = "Merged " + branchName + " into " + curBranch + ".";
+        Commit mergeCommit = new Commit(msg, nextTracked, givenHeadSha);
+        String mergeSha = mergeCommit.getSha1();
+
+        Head.setHead(mergeSha);
+        Branch.setLastCommitInCurrentBranch(mergeSha);
+
+        Index.clearIndex();
+
+        if (encounteredConflict) {
+            System.out.println("Encountered a merge conflict.");
+        }
     }
 
+
+    private static boolean existsUntrackedFileInTheWay(Map<String, String> currTracked,
+                                                       Map<String, String> splitTracked,
+                                                       Map<String, String> givenTracked) {
+        Set<String> all = new HashSet<>();
+        all.addAll(splitTracked.keySet());
+        all.addAll(currTracked.keySet());
+        all.addAll(givenTracked.keySet());
+
+        for (String path : all) {
+            String s = splitTracked.get(path);
+            String c = currTracked.get(path);
+            String g = givenTracked.get(path);
+
+            boolean willWrite = false;
+
+            if (s == null) {
+                if (g != null && !Objects.equals(c, g)) {
+                    willWrite = true;
+                }
+            } else {
+                boolean cUnchanged = Objects.equals(c, s);
+                boolean gUnchanged = Objects.equals(g, s);
+                if (cUnchanged && !gUnchanged && g != null) {
+                    willWrite = true;
+                } else if (!cUnchanged && !gUnchanged && !Objects.equals(c, g)) {
+                    willWrite = true;
+                }
+            }
+
+            if (willWrite) {
+                File f = new File(path);
+                boolean untracked = !currTracked.containsKey(path) && !Index.isStaggedForAddition(f);
+                if (f.exists() && untracked) {
+                    return true;
+                }
+            }
+        }
+        return false;
+    }
+
+    private static void writeBlobToPath(String blobSha, String absPath) {
+        if (blobSha == null) return;
+        File dest = new File(absPath);
+        if (dest.getParentFile() != null) {
+            dest.getParentFile().mkdirs();
+        }
+        byte[] contents = Utils.readContents(new File(BLOBS_DIR, blobSha));
+        Utils.writeContents(dest, contents);
+    }
+
+    private static void writeConflict(String absPath, String currentBlobSha, String givenBlobSha) {
+        String cur = (currentBlobSha == null) ? "" :
+                new String(Utils.readContents(new File(BLOBS_DIR, currentBlobSha)));
+        String giv = (givenBlobSha == null) ? "" :
+                new String(Utils.readContents(new File(BLOBS_DIR, givenBlobSha)));
+
+        String merged =
+                "<<<<<<< HEAD\n" +
+                        cur +
+                        "=======\n" +
+                        giv +
+                        ">>>>>>>\n";
+
+        File dest = new File(absPath);
+        if (dest.getParentFile() != null) {
+            dest.getParentFile().mkdirs();
+        }
+        Utils.writeContents(dest, merged);
+    }
+
+    /** Fast-forward checkout: make CWD match target commit exactly (no staging). */
+    private static void checkoutToCommit(Commit target) {
+        for (Map.Entry<String, String> e : target.getTrackedFiles().entrySet()) {
+            writeBlobToPath(e.getValue(), e.getKey());
+        }
+        Commit cur = Commit.getCurrentCommit();
+        for (String p : cur.getTrackedFiles().keySet()) {
+            if (!target.getTrackedFiles().containsKey(p)) {
+                File f = new File(p);
+                if (f.exists()) f.delete();
+            }
+        }
+    }
+
+    /** Find "latest" common ancestor using nearest-sum distance from both heads (BFS over both parents). */
+    private static String findSplitPoint(String headA, String headB) {
+        Map<String, Integer> distA = bfsDistances(headA);
+        Map<String, Integer> distB = bfsDistances(headB);
+
+        String best = null;
+        int bestScore = Integer.MAX_VALUE;
+
+        for (String sha : distA.keySet()) {
+            if (distB.containsKey(sha)) {
+                int score = distA.get(sha) + distB.get(sha);
+                if (score < bestScore) {
+                    bestScore = score;
+                    best = sha;
+                }
+            }
+        }
+
+        if (best == null) best = headA;
+        return best;
+    }
+
+    private static Map<String, Integer> bfsDistances(String startSha) {
+        Map<String, Integer> dist = new HashMap<>();
+        Deque<String> dq = new ArrayDeque<>();
+        dq.add(startSha);
+        dist.put(startSha, 0);
+
+        while (!dq.isEmpty()) {
+            String cur = dq.removeFirst();
+            int d = dist.get(cur);
+            Commit c = Commit.getCommitBySha(cur);
+
+            String p1 = c.getParentsha();
+            if (p1 != null && !p1.equals("") && !dist.containsKey(p1)) {
+                dist.put(p1, d + 1);
+                dq.addLast(p1);
+            }
+            String p2 = c.getSecondParentSha();
+            if (p2 != null && !p2.equals("") && !dist.containsKey(p2)) {
+                dist.put(p2, d + 1);
+                dq.addLast(p2);
+            }
+        }
+        return dist;
+    }
 
     /**
      * just create the file and folder in our repo

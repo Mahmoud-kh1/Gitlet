@@ -71,7 +71,6 @@ public class Main {
             case "status" :
                 validateNumArgs(args, 1);
                 Repository.status();
-                // TODO : fill the status command
                 break;
             case "checkout" :
                 if (args.length == 1){
@@ -97,10 +96,12 @@ public class Main {
                 Repository.removeBranch(args[1]);
                 break;
             case "reset" :
-                // TODO : fill the reset command
+                validateNumArgs(args, 2);
+                Repository.reset(args[1]);
                 break;
             case "merge":
-                // TODO : fill the merge command
+                validateNumArgs(args, 2);
+                Repository.merge(args[1]);
                 break;
             default:
                 errorMessage("No command with that name exists.");

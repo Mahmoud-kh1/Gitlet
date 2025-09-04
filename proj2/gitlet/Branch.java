@@ -15,9 +15,14 @@ public class Branch {
      */
    public static void create(String branchName) {
        try {
-           File newFile = new File(Repository.BRANCHES_DIR, branchName);
-           newFile.createNewFile();
-           Utils.writeContents(newFile, Head.getHeadSha1());
+           File newBranch = new File(Repository.BRANCHES_DIR, branchName);
+           if (newBranch.exists()) {
+               System.out.println("A branch with that name already exists.");
+               return;
+           }
+           newBranch.createNewFile();
+           Utils.writeContents(newBranch, Head.getHeadSha1());
+
        }
        catch (IOException e) {
            e.printStackTrace();
@@ -63,4 +68,21 @@ public class Branch {
         branchNames.sort(null);
         return branchNames;
     }
+
+
+    public static void remove(String branchName) {
+        File branchFile = new File(Repository.BRANCHES_DIR, branchName);
+
+        if (!branchFile.exists()) {
+            System.out.println("A branch with that name does not exist.");
+            return;
+        }
+
+        if (branchName.equals(Repository.curBranchName)) {
+            System.out.println("Cannot remove the current branch.");
+            return;
+        }
+        branchFile.delete();
+    }
+
 }

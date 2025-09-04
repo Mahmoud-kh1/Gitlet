@@ -89,10 +89,12 @@ public class Main {
 
                 break;
             case "branch" :
-                // TODO : fill branch command
+                validateNumArgs(args, 2);
+                Repository.createBranch(args[1]);
                 break;
             case "rm-branch":
-                // TODO : fill the rm-branch command
+                validateNumArgs(args, 2);
+                Repository.removeBranch(args[1]);
                 break;
             case "reset" :
                 // TODO : fill the reset command

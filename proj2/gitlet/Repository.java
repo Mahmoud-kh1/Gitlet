@@ -357,17 +357,17 @@ public class Repository {
          checkOut(curCommit, realativePath);
     }
 
-
-    /** TODO : branch function to create a new branch */
-
-    public static void branch (){
+    /** TODO : checkout form given branch
+     */
+    public static void checkOutBranch(String Sha1){
 
     }
 
+
     /** TODO : remove branch function to delete the pointer to this branch only not to delete commits in it */
 
-    public static void removeBranch (){
-
+    public static void removeBranch (String branchName){
+      Branch.remove(branchName);
     }
 
     /** TODO : reset look at document*/
